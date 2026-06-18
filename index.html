@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scanline Generator</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <aside id="controls"></aside>
+      <main id="stage">
+        <div id="dropzone">
+          <p class="dz-title">이미지를 드래그하거나 클릭해서 업로드</p>
+          <p class="dz-sub">PNG · JPG · WebP</p>
+        </div>
+        <canvas id="canvas" hidden></canvas>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

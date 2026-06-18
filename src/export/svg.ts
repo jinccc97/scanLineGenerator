@@ -1,0 +1,64 @@
+import type { RGBAImage, Stroke } from '../engine/types'
+import type { Settings } from '../state'
+import { ribbonPolygon, ribbonQuads } from '../render/ribbon'
+import { sampleColorHex } from '../engine/sample'
+import { download } from './download'
+
+function f(n: number): string {
+  return Math.round(n * 10) / 10 + ''
+}
+
+function polygonTag(points: { x: number; y: number }[], fill?: string): string {
+  const pts = points.map((p) => `${f(p.x)},${f(p.y)}`).join(' ')
+  const attr = fill ? ` fill="${fill}"` : ''
+  return `<polygon points="${pts}"${attr}/>`
+}
+
+/** Serialize variable-width strokes into an SVG document (filled ribbons). */
+export function buildSVG(
+  strokes: Stroke[],
+  width: number,
+  height: number,
+  settings: Settings,
+  source?: RGBAImage,
+): string {
+  const photo = settings.colorMode === 'photo' && !!source
+
+  let body: string
+  let groupAttr: string
+  if (photo && source) {
+    body = strokes
+      .flatMap((s) => ribbonQuads(s).map((q) => polygonTag(q.quad, sampleColorHex(source, q.mx, q.my))))
+      .join('\n')
+    groupAttr = 'stroke="none"'
+  } else {
+    body = strokes
+      .map((s) => {
+        const poly = ribbonPolygon(s)
+        return poly.length < 3 ? '' : polygonTag(poly)
+      })
+      .filter(Boolean)
+      .join('\n')
+    groupAttr = `fill="${settings.color}" stroke="none"`
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+<rect width="${width}" height="${height}" fill="${settings.background}"/>
+<g ${groupAttr}>
+${body}
+</g>
+</svg>`
+}
+
+/** Export strokes as an SVG file. */
+export function exportSVG(
+  strokes: Stroke[],
+  width: number,
+  height: number,
+  settings: Settings,
+  source?: RGBAImage,
+  filename = 'scanline.svg',
+): void {
+  const svg = buildSVG(strokes, width, height, settings, source)
+  download(new Blob([svg], { type: 'image/svg+xml' }), filename)
+}

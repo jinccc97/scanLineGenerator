@@ -44,8 +44,16 @@ function loadFile(file: File): void {
 createControls(controlsEl, settings, {
   onChange: scheduleRender,
   onUpload: loadFile,
-  onExportPNG: () => {
-    if (sourceImage) exportPNG(canvas)
+  onExportPNG: (scale: number) => {
+    if (!sourceImage || !lastResult) return
+    if (scale === 1) {
+      exportPNG(canvas, 'scanline.png')
+      return
+    }
+    // Re-render the vector geometry at higher resolution for crisp output.
+    const hi = document.createElement('canvas')
+    renderToCanvas(hi, lastResult.strokes, lastResult.width, lastResult.height, settings, sourceImage, scale)
+    exportPNG(hi, `scanline@${scale}x.png`)
   },
   onExportSVG: () => {
     if (lastResult) {

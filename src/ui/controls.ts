@@ -3,9 +3,11 @@ import { DEFAULTS, PRESETS, type ColorMode, type Settings } from '../state'
 export type ControlHandlers = {
   onChange: (settings: Settings) => void
   onUpload: (file: File) => void
-  onExportPNG: () => void
+  onExportPNG: (scale: number) => void
   onExportSVG: () => void
 }
+
+const EXPORT_SCALES = [1, 2, 3]
 
 type SliderSpec = {
   key: keyof Settings
@@ -226,12 +228,33 @@ export function createControls(
 
   // --- Export ---
   const exportSection = section('내보내기')
+
+  // PNG resolution scale (re-renders vectors at higher resolution).
+  let exportScale = 1
+  const scaleLabel = document.createElement('div')
+  scaleLabel.className = 'sub-label'
+  scaleLabel.textContent = 'PNG 해상도'
+  const scaleTabs = document.createElement('div')
+  scaleTabs.className = 'tabs'
+  const scaleButtons = EXPORT_SCALES.map((s) => {
+    const btn = document.createElement('button')
+    btn.className = 'tab' + (s === exportScale ? ' active' : '')
+    btn.textContent = `${s}x`
+    btn.addEventListener('click', () => {
+      exportScale = s
+      scaleButtons.forEach(({ scale, el }) => el.classList.toggle('active', scale === exportScale))
+    })
+    scaleTabs.append(btn)
+    return { scale: s, el: btn }
+  })
+  exportSection.append(scaleLabel, scaleTabs)
+
   const exportRow = document.createElement('div')
   exportRow.className = 'export-row'
   const pngBtn = document.createElement('button')
   pngBtn.className = 'btn btn-primary'
   pngBtn.textContent = 'PNG'
-  pngBtn.addEventListener('click', handlers.onExportPNG)
+  pngBtn.addEventListener('click', () => handlers.onExportPNG(exportScale))
   const svgBtn = document.createElement('button')
   svgBtn.className = 'btn btn-primary'
   svgBtn.textContent = 'SVG'

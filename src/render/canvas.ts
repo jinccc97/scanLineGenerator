@@ -3,7 +3,7 @@ import type { Settings } from '../state'
 import { applyTexture } from '../engine/texture'
 import { ribbonPolygon } from './ribbon'
 
-/** Add every ribbon outline to the current path. */
+/** Add every ribbon outline to the current path (in logical coordinates). */
 function pathRibbons(ctx: CanvasRenderingContext2D, strokes: Stroke[]): void {
   ctx.beginPath()
   for (const stroke of strokes) {
@@ -29,9 +29,10 @@ function imageToCanvas(src: RGBAImage): HTMLCanvasElement {
 }
 
 /**
- * Draw variable-width strokes as filled ribbons, then overlay texture.
- * In 'photo' color mode the lines act as a mask through which the original
- * image colors show; otherwise they are filled with the single line color.
+ * Draw variable-width strokes as filled ribbons, then overlay texture. `scale`
+ * re-renders the same vector geometry at a higher pixel resolution for crisp,
+ * larger output (1 = preview size). In 'photo' color mode the lines act as a
+ * mask through which the original image colors show.
  */
 export function renderToCanvas(
   canvas: HTMLCanvasElement,
@@ -40,34 +41,42 @@ export function renderToCanvas(
   height: number,
   settings: Settings,
   source?: RGBAImage,
+  scale = 1,
 ): void {
-  canvas.width = width
-  canvas.height = height
+  const sw = Math.round(width * scale)
+  const sh = Math.round(height * scale)
+  canvas.width = sw
+  canvas.height = sh
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('2D canvas context unavailable')
 
   ctx.fillStyle = settings.background
-  ctx.fillRect(0, 0, width, height)
+  ctx.fillRect(0, 0, sw, sh)
 
   if (settings.colorMode === 'photo' && source) {
-    // Build a line mask, then keep only the photo where the lines are.
+    // Build a line mask at full resolution, then keep only the photo where lines are.
     const mask = document.createElement('canvas')
-    mask.width = width
-    mask.height = height
+    mask.width = sw
+    mask.height = sh
     const mctx = mask.getContext('2d')
     if (mctx) {
+      mctx.scale(scale, scale)
       mctx.fillStyle = '#000'
       pathRibbons(mctx, strokes)
       mctx.fill()
+      mctx.setTransform(1, 0, 0, 1, 0, 0)
       mctx.globalCompositeOperation = 'source-in'
-      mctx.drawImage(imageToCanvas(source), 0, 0, width, height)
+      mctx.drawImage(imageToCanvas(source), 0, 0, sw, sh)
       ctx.drawImage(mask, 0, 0)
     }
   } else {
+    ctx.save()
+    ctx.scale(scale, scale)
     ctx.fillStyle = settings.color
     pathRibbons(ctx, strokes)
     ctx.fill()
+    ctx.restore()
   }
 
-  applyTexture(ctx, width, height, settings.texture)
+  applyTexture(ctx, sw, sh, settings.texture)
 }

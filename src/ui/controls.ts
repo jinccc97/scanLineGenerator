@@ -1,4 +1,5 @@
 import { DEFAULTS, PRESETS, type ColorMode, type Settings } from '../state'
+import { INK_ORDER, LITHO_INKS, MAX_INKS } from '../engine/inks'
 
 export type ControlHandlers = {
   onChange: (settings: Settings) => void
@@ -170,6 +171,7 @@ export function createControls(
   const tabDefs: Array<{ mode: ColorMode; label: string }> = [
     { mode: 'duo', label: '2색' },
     { mode: 'photo', label: '사진 색상' },
+    { mode: 'litho', label: '리소' },
   ]
   const tabButtons = tabDefs.map(({ mode, label }) => {
     const btn = document.createElement('button')
@@ -189,20 +191,55 @@ export function createControls(
     settings.color = v
     handlers.onChange(settings)
   })
-  const bgColor = colorPicker('배경 색', settings.background, (v) => {
+  const bgColor = colorPicker('배경/종이 색', settings.background, (v) => {
     settings.background = v
     handlers.onChange(settings)
   })
+
+  // Ink checkboxes (litho mode, max 4).
+  const inkGroup = document.createElement('div')
+  inkGroup.className = 'ink-group'
+  const inkLabel = document.createElement('div')
+  inkLabel.className = 'sub-label'
+  inkGroup.append(inkLabel)
+  const inkBoxes = INK_ORDER.map((key) => {
+    const item = document.createElement('label')
+    item.className = 'ink-item'
+    const cb = document.createElement('input')
+    cb.type = 'checkbox'
+    const swatch = document.createElement('span')
+    swatch.className = 'ink-swatch'
+    swatch.style.background = LITHO_INKS[key].hex
+    const text = document.createElement('span')
+    text.textContent = LITHO_INKS[key].name
+    item.append(cb, swatch, text)
+    cb.addEventListener('change', () => {
+      const set = new Set(settings.inks)
+      if (cb.checked) set.add(key)
+      else set.delete(key)
+      settings.inks = INK_ORDER.filter((k) => set.has(k))
+      refresh()
+      handlers.onChange(settings)
+    })
+    inkGroup.append(item)
+    return { key, cb }
+  })
+
   refreshers.push(() => {
     lineColor.input.value = settings.color
     bgColor.input.value = settings.background
-    // Line color only applies in duo mode.
-    lineColor.row.style.display = settings.colorMode === 'duo' ? '' : 'none'
-    tabButtons.forEach(({ mode, btn }) =>
-      btn.classList.toggle('active', settings.colorMode === mode),
-    )
+    const mode = settings.colorMode
+    lineColor.row.style.display = mode === 'duo' ? '' : 'none'
+    inkGroup.style.display = mode === 'litho' ? '' : 'none'
+    const atMax = settings.inks.length >= MAX_INKS
+    inkLabel.textContent = `잉크 (최대 ${MAX_INKS}개) · ${settings.inks.length}/${MAX_INKS}`
+    inkBoxes.forEach(({ key, cb }) => {
+      cb.checked = settings.inks.includes(key)
+      cb.disabled = !cb.checked && atMax
+    })
+    tabButtons.forEach(({ mode: m, btn }) => btn.classList.toggle('active', mode === m))
   })
-  colorSection.append(lineColor.row, bgColor.row)
+  colorSection.append(lineColor.row, inkGroup, bgColor.row)
   container.append(colorSection)
 
   // --- Presets ---

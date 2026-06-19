@@ -2,6 +2,7 @@ import type { RGBAImage, Stroke } from '../engine/types'
 import type { Settings } from '../state'
 import { applyTexture } from '../engine/texture'
 import { ribbonPolygon } from './ribbon'
+import { renderLitho } from './litho'
 
 /** Add every ribbon outline to the current path (in logical coordinates). */
 function pathRibbons(ctx: CanvasRenderingContext2D, strokes: Stroke[]): void {
@@ -49,6 +50,11 @@ export function renderToCanvas(
   canvas.height = sh
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('2D canvas context unavailable')
+
+  if (settings.colorMode === 'litho' && source) {
+    renderLitho(ctx, source, width, height, settings, scale)
+    return
+  }
 
   ctx.fillStyle = settings.background
   ctx.fillRect(0, 0, sw, sh)

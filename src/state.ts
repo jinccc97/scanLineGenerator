@@ -1,4 +1,6 @@
-export type ColorMode = 'duo' | 'photo'
+import { DEFAULT_INKS, type InkKey } from './engine/inks'
+
+export type ColorMode = 'duo' | 'photo' | 'litho'
 
 export type Settings = {
   lineWidth: number // 1..10, stroke width (px)
@@ -9,9 +11,10 @@ export type Settings = {
   crossHatch: boolean // perpendicular lines in dark regions
   contrast: number // -100..100, source contrast adjustment
   brightness: number // -100..100, source brightness adjustment
-  colorMode: ColorMode // 'duo' = line+bg colors, 'photo' = sample original photo
+  colorMode: ColorMode // 'duo' = line+bg, 'photo' = original colors, 'litho' = risograph
+  inks: InkKey[] // selected risograph inks (litho mode, max 4)
   color: string // line color (duo mode)
-  background: string // background color
+  background: string // background / paper color
 }
 
 export const DEFAULTS: Settings = {
@@ -24,6 +27,7 @@ export const DEFAULTS: Settings = {
   contrast: 0,
   brightness: 0,
   colorMode: 'duo',
+  inks: [...DEFAULT_INKS],
   color: '#1f3b5f',
   background: '#f5f2ea',
 }

@@ -1,8 +1,9 @@
 import type { RGBAImage, Stroke } from '../engine/types'
 import type { Settings } from '../state'
 import { applyTexture } from '../engine/texture'
-import { ribbonPolygon } from './ribbon'
+import { ribbonPolygon, ribbonQuads } from './ribbon'
 import { renderLitho } from './litho'
+import { triColorAt } from './tricolor'
 
 /** Add every ribbon outline to the current path (in logical coordinates). */
 function pathRibbons(ctx: CanvasRenderingContext2D, strokes: Stroke[]): void {
@@ -58,6 +59,25 @@ export function renderToCanvas(
 
   ctx.fillStyle = settings.background
   ctx.fillRect(0, 0, sw, sh)
+
+  if (settings.colorMode === 'tri' && source) {
+    // Per-segment quads colored by local darkness (line color -> dark color).
+    ctx.save()
+    ctx.scale(scale, scale)
+    for (const stroke of strokes) {
+      for (const { quad, mx, my } of ribbonQuads(stroke)) {
+        ctx.fillStyle = triColorAt(settings, source, mx, my)
+        ctx.beginPath()
+        ctx.moveTo(quad[0].x, quad[0].y)
+        for (let i = 1; i < quad.length; i++) ctx.lineTo(quad[i].x, quad[i].y)
+        ctx.closePath()
+        ctx.fill()
+      }
+    }
+    ctx.restore()
+    applyTexture(ctx, sw, sh, settings.texture)
+    return
+  }
 
   if (settings.colorMode === 'photo' && source) {
     // Build a line mask at full resolution, then keep only the photo where lines are.

@@ -170,6 +170,7 @@ export function createControls(
   tabs.className = 'tabs'
   const tabDefs: Array<{ mode: ColorMode; label: string }> = [
     { mode: 'duo', label: '2색' },
+    { mode: 'tri', label: '3색' },
     { mode: 'photo', label: '사진 색상' },
     { mode: 'litho', label: '리소' },
   ]
@@ -189,6 +190,10 @@ export function createControls(
 
   const lineColor = colorPicker('선 색', settings.color, (v) => {
     settings.color = v
+    handlers.onChange(settings)
+  })
+  const darkColor = colorPicker('어두운 영역 색', settings.darkColor, (v) => {
+    settings.darkColor = v
     handlers.onChange(settings)
   })
   const bgColor = colorPicker('배경/종이 색', settings.background, (v) => {
@@ -227,9 +232,11 @@ export function createControls(
 
   refreshers.push(() => {
     lineColor.input.value = settings.color
+    darkColor.input.value = settings.darkColor
     bgColor.input.value = settings.background
     const mode = settings.colorMode
-    lineColor.row.style.display = mode === 'duo' ? '' : 'none'
+    lineColor.row.style.display = mode === 'duo' || mode === 'tri' ? '' : 'none'
+    darkColor.row.style.display = mode === 'tri' ? '' : 'none'
     inkGroup.style.display = mode === 'litho' ? '' : 'none'
     const atMax = settings.inks.length >= MAX_INKS
     inkLabel.textContent = `잉크 (최대 ${MAX_INKS}개) · ${settings.inks.length}/${MAX_INKS}`
@@ -239,7 +246,7 @@ export function createControls(
     })
     tabButtons.forEach(({ mode: m, btn }) => btn.classList.toggle('active', mode === m))
   })
-  colorSection.append(lineColor.row, inkGroup, bgColor.row)
+  colorSection.append(lineColor.row, darkColor.row, inkGroup, bgColor.row)
   container.append(colorSection)
 
   // --- Presets ---
@@ -254,6 +261,7 @@ export function createControls(
     btn.style.setProperty('--bg', preset.background)
     btn.addEventListener('click', () => {
       settings.color = preset.color
+      settings.darkColor = preset.darkColor
       settings.background = preset.background
       refresh()
       handlers.onChange(settings)

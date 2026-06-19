@@ -3,6 +3,7 @@ import type { Settings } from '../state'
 import { ribbonPolygon, ribbonQuads } from '../render/ribbon'
 import { sampleColorHex } from '../engine/sample'
 import { computeLithoLayers } from '../engine/litho'
+import { triColorAt } from '../render/tricolor'
 import { download } from './download'
 
 function f(n: number): string {
@@ -50,12 +51,18 @@ export function buildSVG(
   }
 
   const photo = settings.colorMode === 'photo' && !!source
+  const tri = settings.colorMode === 'tri' && !!source
 
   let body: string
   let groupAttr: string
   if (photo && source) {
     body = strokes
       .flatMap((s) => ribbonQuads(s).map((q) => polygonTag(q.quad, sampleColorHex(source, q.mx, q.my))))
+      .join('\n')
+    groupAttr = 'stroke="none"'
+  } else if (tri && source) {
+    body = strokes
+      .flatMap((s) => ribbonQuads(s).map((q) => polygonTag(q.quad, triColorAt(settings, source, q.mx, q.my))))
       .join('\n')
     groupAttr = 'stroke="none"'
   } else {

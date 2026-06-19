@@ -27,6 +27,20 @@ describe('buildSVG', () => {
     expect(svg).not.toContain('<polygon')
   })
 
+  it('uses the dark color over dark regions in tri mode', () => {
+    const triSettings = {
+      ...DEFAULTS,
+      colorMode: 'tri' as const,
+      color: '#ffffff',
+      darkColor: '#ff0000',
+    }
+    // single black pixel -> darkness high -> dark color
+    const source = { width: 1, height: 1, data: new Uint8ClampedArray([0, 0, 0, 255]) }
+    const strokes: Stroke[] = [{ points: [{ x: 0, y: 0 }, { x: 0.9, y: 0 }], widths: [2, 2] }]
+    const svg = buildSVG(strokes, 1, 1, triSettings, source)
+    expect(svg).toContain('fill="#ff0000"')
+  })
+
   it('colors polygons from the source image in photo mode', () => {
     const photoSettings = { ...DEFAULTS, colorMode: 'photo' as const, background: '#ffffff' }
     // 2x1 image: left pixel red, right pixel green.
